@@ -1,7 +1,7 @@
 use rustler::{Decoder, Encoder, Env, NifResult, NifStruct, Term};
 
 #[derive(NifStruct)]
-#[module = "ExMoQ.Native.WebCodecs.VideoTrackParams"]
+#[module = "ExMoQ.WebCodecs.VideoTrackParams"]
 pub(crate) struct VideoTrackParams {
     pub(crate) width: Option<u32>,
     pub(crate) height: Option<u32>,
@@ -9,7 +9,7 @@ pub(crate) struct VideoTrackParams {
 }
 
 #[derive(NifStruct)]
-#[module = "ExMoQ.Native.WebCodecs.AudioTrackParams"]
+#[module = "ExMoQ.WebCodecs.AudioTrackParams"]
 pub(crate) struct AudioTrackParams {
     pub(crate) sample_rate: u32,
     pub(crate) channels: u32,
@@ -18,7 +18,7 @@ pub(crate) struct AudioTrackParams {
 pub(crate) struct H264Codec(pub(crate) hang::catalog::H264);
 
 #[derive(NifStruct)]
-#[module = "ExMoQ.Native.WebCodecs.H264Codec"]
+#[module = "ExMoQ.WebCodecs.H264Codec"]
 struct H264CodecTerm {
     in_band: bool,
     profile: u8,
@@ -54,7 +54,7 @@ impl<'a> Decoder<'a> for H264Codec {
 pub(crate) struct H265Codec(pub(crate) hang::catalog::H265);
 
 #[derive(NifStruct)]
-#[module = "ExMoQ.Native.WebCodecs.H265Codec"]
+#[module = "ExMoQ.WebCodecs.H265Codec"]
 struct H265CodecTerm {
     in_band: bool,
     profile_space: u8,
@@ -109,7 +109,7 @@ impl<'a> Decoder<'a> for H265Codec {
 pub(crate) struct AacCodec(pub(crate) hang::catalog::AAC);
 
 #[derive(NifStruct)]
-#[module = "ExMoQ.Native.WebCodecs.AACCodec"]
+#[module = "ExMoQ.WebCodecs.AACCodec"]
 struct AacCodecTerm {
     profile: u8,
 }

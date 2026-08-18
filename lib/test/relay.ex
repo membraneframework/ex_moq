@@ -1,8 +1,7 @@
 defmodule ExMoQ.Test.Relay do
   @moduledoc """
-  NOTE: This test support module was LLM-generated.
-
   Runs a MoQ relay for integration tests as a regular supervised process.
+
   Start one per test module in `setup_all` for a relay shared by the module's
   tests, or inside a single test when it needs its own instance — e.g. to stop
   it mid-test and observe session-drop handling:

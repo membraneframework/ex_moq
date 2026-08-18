@@ -4,7 +4,7 @@ defmodule ExMoQ.Native do
   """
   use Rustler, otp_app: :ex_moq, crate: "ex_moq"
 
-  alias ExMoQ.Native.WebCodecs
+  alias ExMoQ.WebCodecs
 
   @type session :: reference()
   @type broadcast_producer :: reference()

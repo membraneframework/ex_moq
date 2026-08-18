@@ -4,7 +4,7 @@ defmodule ExMoQ.NativeTest do
   use ExUnit.Case, async: true
 
   alias ExMoQ.Native
-  alias ExMoQ.Native.WebCodecs
+  alias ExMoQ.WebCodecs
   alias ExMoQ.Test.Relay
 
   @moduletag :integration
