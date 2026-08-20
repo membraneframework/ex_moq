@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rustler::{Binary, Encoder, LocalPid, NewBinary, OwnedEnv, Term};
 
 use crate::atoms;
@@ -106,27 +108,25 @@ pub(crate) fn send_catalog(
     env.send_and_clear(&pid, |env| {
         let videos = catalog.video.renditions.iter().map(|(name, config)| {
             (
-                name,
+                name.as_str(),
                 match VideoTrackFormat::try_from(config) {
                     Ok(format) => format.encode(env),
                     Err(unrecognized) => unrecognized.encode(env),
                 },
             )
-                .encode(env)
         });
 
         let audios = catalog.audio.renditions.iter().map(|(name, config)| {
             (
-                name,
+                name.as_str(),
                 match AudioTrackFormat::try_from(config) {
                     Ok(format) => format.encode(env),
                     Err(unrecognized) => unrecognized.encode(env),
                 },
             )
-                .encode(env)
         });
 
-        let renditions: Vec<Term> = videos.chain(audios).collect();
+        let renditions: HashMap<&str, Term> = videos.chain(audios).collect();
 
         (atoms::moq_catalog(), path, renditions).encode(env)
     })

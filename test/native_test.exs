@@ -76,13 +76,17 @@ defmodule ExMoQ.NativeTest do
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
     :ok = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
-    await_renditions(broadcast, &match?([{@track, %WebCodecs.VideoTrackFormat{}}], &1))
+
+    await_renditions(
+      broadcast,
+      &match?(%{@track => %WebCodecs.VideoTrackFormat{}} = m when map_size(m) == 1, &1)
+    )
 
     # A name the broadcast already carries cannot be added again.
     assert {:error, _reason} = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
 
     :ok = Native.remove_track(producer, @track)
-    await_renditions(broadcast, &(&1 == []))
+    await_renditions(broadcast, &(&1 == %{}))
 
     # An update under the removed name must not resurrect its rendition.
     assert {:error, _reason} = Native.update_track(producer, @track, h264_format())
@@ -90,13 +94,21 @@ defmodule ExMoQ.NativeTest do
 
     # The name is free for reuse, and updates then target the successor track.
     :ok = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
-    await_renditions(broadcast, &match?([{@track, %WebCodecs.VideoTrackFormat{}}], &1))
+
+    await_renditions(
+      broadcast,
+      &match?(%{@track => %WebCodecs.VideoTrackFormat{}} = m when map_size(m) == 1, &1)
+    )
 
     assert :ok = Native.update_track(producer, @track, h264_format(1920))
 
     await_renditions(
       broadcast,
-      &match?([{@track, %WebCodecs.VideoTrackFormat{params: %{width: 1920}}}], &1)
+      &match?(
+        %{@track => %WebCodecs.VideoTrackFormat{params: %{width: 1920}}} = m
+        when map_size(m) == 1,
+        &1
+      )
     )
 
     :ok = Native.close_broadcast_consumer(consumer)
@@ -138,7 +150,10 @@ defmodule ExMoQ.NativeTest do
 
     :ok = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
 
-    await_renditions(broadcast, &match?([{@track, %WebCodecs.VideoTrackFormat{}}], &1))
+    await_renditions(
+      broadcast,
+      &match?(%{@track => %WebCodecs.VideoTrackFormat{}} = m when map_size(m) == 1, &1)
+    )
 
     early_token = 1
     :ok = Native.subscribe_track(consumer, @track, early_token, 60)

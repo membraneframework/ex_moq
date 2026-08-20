@@ -169,7 +169,7 @@ defmodule ExMoQ.Native do
         once the broadcast is announced and its catalog is subscribed
     * `{:moq_broadcast_closed, path :: String.t(), reason :: close_reason()}`
         when the broadcast ends, errors, or the session closes underneath it
-    * `{:moq_catalog, path :: String.t(), renditions :: [{track(), track_format() | :unrecognized}]}`
+    * `{:moq_catalog, path :: String.t(), renditions :: %{track() => track_format() | :unrecognized}}`
         with the full catalog snapshot, once the broadcast is announced
         and again on every catalog update.
         Diffing consecutive snapshots is the caller's job:
