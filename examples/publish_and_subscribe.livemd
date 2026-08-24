@@ -1,0 +1,152 @@
+<!-- livebook:{"autosave_interval_s":null} -->
+
+# ExMoQ publishing & subscribing
+
+```elixir
+Mix.install([
+  {:ex_moq, path: Path.join(__DIR__, "..")},
+  # optional dependency of ex_moq, required by ExMoQ.Test.Relay
+  {:muontrap, "~> 1.8"},
+  {:kino, "~> 0.14"}
+])
+
+Logger.configure(level: :info)
+```
+
+## Setup
+
+Each MoQ track needs to be assigned to a broadcast.
+A broadcast is a collection of tracks, and a session is a collection of broadcasts.
+For details, see https://doc.moq.dev/concept/layer/moq-lite.html#terminology
+
+This notebook runs end-to-end against a self-hosted relay,
+so it needs a `moq-relay` binary, either on `$PATH`
+or pointed to by the `$MOQ_RELAY` environment variable.
+
+```elixir
+{:ok, relay_pid} = Kino.start_child(ExMoQ.Test.Relay)
+%{url: url, disable_tls_verify?: disable_tls_verify?} = ExMoQ.Test.Relay.relay(relay_pid)
+
+broadcast = "my_broadcast"
+track = "my_video_track"
+```
+
+## Publishing
+
+```elixir
+alias ExMoQ.Native
+
+{:ok, pub_session} = Native.create_session(url, self(), disable_tls_verify?)
+
+receive do
+  :moq_connected -> :ok
+after
+  2_000 -> raise "timeout"
+end
+
+{:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
+```
+
+```elixir
+alias ExMoQ.WebCodecs
+
+avc_decoder_config_record = <<>>
+
+format = %WebCodecs.VideoTrackFormat{
+  params: %WebCodecs.VideoTrackParams{width: 1280, height: 720, framerate: 30.0},
+  description: avc_decoder_config_record,
+  codec: %WebCodecs.H264Codec{in_band: false, profile: 100, constraints: 0, level: 31}
+}
+
+:ok =
+  Native.add_track(producer, track, format, _priority = nil, :legacy, _latency_ns = 0)
+```
+
+```elixir
+frame_duration_ns = div(1_000_000_000, 30)
+
+{:ok, publisher_pid} =
+  Kino.start_child(
+    {Task,
+     fn ->
+       Stream.iterate(0, &(&1 + 1))
+       |> Stream.each(fn i ->
+         keyframe? = rem(i, 30) == 0
+         payload = <<i::32, 0::8*100>>
+
+         :ok =
+           Native.send_frame(
+             producer,
+             track,
+             i * frame_duration_ns,
+             keyframe?,
+             payload
+           )
+
+         Process.sleep(33)
+       end)
+       |> Stream.run()
+     end}
+  )
+```
+
+## Subscribing
+
+```elixir
+require Logger
+
+{:ok, subscriber_pid} =
+  Kino.start_child({Task,
+   fn ->
+     {:ok, sub_session} = Native.create_session(url, self(), disable_tls_verify?)
+
+     receive do
+       :moq_connected -> :ok
+     after
+       2_000 -> raise "timeout"
+     end
+
+     {:ok, consumer} =
+       Native.create_broadcast_consumer(sub_session, broadcast, self(), _latency_ns = 0)
+
+     receive do
+       {:moq_catalog, ^broadcast, renditions} when is_map_key(renditions, track) ->
+         IO.inspect(renditions[track], label: "format")
+     after
+       10_000 -> raise "track was not announced"
+     end
+
+     # `token` is any integer you choose; it tags this subscription's messages.
+     :ok = Native.subscribe_track(consumer, track, _token = 1, _priority = nil)
+
+     handle_frame = fn step, payload, timestamp_ns, keyframe? ->
+       IO.puts(
+         "[#{step}] received #{byte_size(payload)}-byte frame, timestamp: #{timestamp_ns} ns, keyframe: #{keyframe?}"
+       )
+     end
+
+     Stream.repeatedly(fn ->
+       receive do
+         {:moq_frame, 1, <<step::32, _rest::binary>> = payload, timestamp_ns, keyframe?} ->
+           handle_frame.(step, payload, timestamp_ns, keyframe?)
+
+         {:moq_track_finished, 1} ->
+           Logger.info("track finished")
+
+         {:moq_broadcast_closed, ^broadcast, reason} ->
+           Logger.info("broadcast closed: #{inspect(reason)}")
+
+         {:moq_track_error, 1, reason} ->
+           raise "subscription failed: #{inspect(reason)}"
+       end
+     end)
+     |> Stream.run()
+   end})
+```
+
+```elixir
+Process.exit(publisher_pid, :shutdown)
+:ok = Native.remove_track(producer, track)
+:ok = Native.close_broadcast_producer(producer)
+Process.exit(subscriber_pid, :shutdown)
+```
