@@ -2,10 +2,10 @@ defmodule ExMoQ.Test.Relay do
   @moduledoc """
   Runs a MoQ relay for ExUnit integration tests.
 
-  `start!/1` starts a relay under the current test supervisor and blocks
+  `start_supervised!/1` starts a relay under the current test supervisor and blocks
   until it accepts connections:
 
-      relay = ExMoQ.Test.Relay.start!()
+      relay = ExMoQ.Test.Relay.start_supervised!()
       {:ok, session} = ExMoQ.Native.create_session(relay.url, self(), relay.disable_tls_verify?)
 
   Call it in `setup_all` for a relay shared by the test module, or inside a
@@ -39,8 +39,8 @@ defmodule ExMoQ.Test.Relay do
   Raises if no moq-relay binary is found, or if the relay exits or does not
   accept connections within #{@ready_timeout_ms} ms.
   """
-  @spec start!([option()]) :: relay()
-  def start!(opts \\ []) do
+  @spec start_supervised!([option()]) :: relay()
+  def start_supervised!(opts \\ []) do
     binary = find_binary!(opts)
     port_number = free_port!()
     pid = ExUnit.Callbacks.start_supervised!(daemon_spec(binary, port_number))

@@ -12,7 +12,7 @@ defmodule ExMoQ.NativeTest do
   @track "video"
 
   setup_all do
-    [relay: Relay.start!()]
+    [relay: Relay.start_supervised!()]
   end
 
   setup do
