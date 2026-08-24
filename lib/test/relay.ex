@@ -1,71 +1,91 @@
 defmodule ExMoQ.Test.Relay do
   @moduledoc """
-  Runs a MoQ relay for integration tests as a regular supervised process.
+  Runs a MoQ relay for ExUnit integration tests.
 
-  Start one per test module in `setup_all` for a relay shared by the module's
-  tests, or inside a single test when it needs its own instance — e.g. to stop
-  it mid-test and observe session-drop handling:
+  `start!/1` starts a relay under the current test supervisor and blocks
+  until it accepts connections:
 
-      setup_all do
-        [relay: Relay.start_supervised!()]
-      end
+      relay = ExMoQ.Test.Relay.start!()
+      {:ok, session} = ExMoQ.Native.create_session(relay.url, self(), relay.disable_tls_verify?)
 
-  Ensures TCP is used for lossless transport,
-  but groups can still be dropped as part of eviction policies.
+  Call it in `setup_all` for a relay shared by the test module, or inside a
+  single test when it needs its own instance.
 
-  Proper teardown is ensured via `MuonTrap.Daemon`.
+  The relay runs as a `MuonTrap.Daemon`, which guarantees the OS process is
+  torn down with the supervisor. Muontrap is an optional dependency of
+  `:ex_moq`, so the host project must depend on it directly:
+  `{:muontrap, "~> 1.8", only: :test}`.
+
+  The moq-relay binary is resolved from the `:binary` option, the `MOQ_RELAY`
+  environment variable, or `$PATH`.
+
+  The relay listens on TCP for lossless transport, but groups can still be
+  dropped as part of eviction policies.
   """
-
-  use GenServer
 
   @ready_timeout_ms 15_000
   @probe_interval_ms 100
 
-  @type relay :: %{url: String.t(), disable_tls_verify?: boolean()}
+  @type relay :: %{url: String.t(), disable_tls_verify?: true}
+  @type option :: {:binary, Path.t()}
 
-  @spec start_link(term()) :: GenServer.on_start()
-  def start_link(_init_arg \\ nil), do: GenServer.start_link(__MODULE__, nil)
+  @doc """
+  Starts a relay under the ExUnit test supervisor and blocks until it
+  accepts connections.
 
-  @spec start_supervised!() :: relay()
-  def start_supervised!() do
-    __MODULE__ |> ExUnit.Callbacks.start_supervised!() |> relay()
-  end
+  The relay can be stopped mid-test with `stop_supervised!(#{inspect(__MODULE__)})`,
+  e.g. to observe session-drop handling.
 
-  @doc "URL and connection options of the relay run by the given server."
-  @spec relay(GenServer.server()) :: relay()
-  def relay(server), do: GenServer.call(server, :relay, :infinity)
-
-  @impl true
-  def init(nil) do
-    binary = find_binary!()
+  Raises if no moq-relay binary is found, or if the relay exits or does not
+  accept connections within #{@ready_timeout_ms} ms.
+  """
+  @spec start!([option()]) :: relay()
+  def start!(opts \\ []) do
+    binary = find_binary!(opts)
     port_number = free_port!()
-    config_path = write_config!(port_number)
-
-    {:ok, _daemon} =
-      MuonTrap.Daemon.start_link(binary, [config_path],
-        stderr_to_stdout: true,
-        log_output: :debug,
-        log_prefix: "moq-relay: ",
-        exit_status_to_reason: &{:moq_relay_exited, &1}
-      )
-
-    await_ready!(port_number)
-
-    File.rm!(config_path)
-
-    {:ok, %{url: "tcp://127.0.0.1:#{port_number}", disable_tls_verify?: false}}
+    pid = ExUnit.Callbacks.start_supervised!(daemon_spec(binary, port_number))
+    await_ready!(port_number, pid)
+    %{url: "tcp://127.0.0.1:#{port_number}", disable_tls_verify?: false}
   end
 
-  @impl true
-  def handle_call(:relay, _from, relay), do: {:reply, relay, relay}
+  defp daemon_spec(binary, port_number) do
+    args = [
+      "--log-level",
+      "info",
+      "--server-tcp-bind",
+      "127.0.0.1:#{port_number}",
+      "--auth-public",
+      ""
+    ]
 
-  defp find_binary!() do
-    System.get_env("MOQ_RELAY") || System.find_executable("moq-relay") ||
-      raise """
-      no moq-relay binary for the integration tests; provide one of:
-        * MOQ_RELAY — path to a moq-relay binary
-        * moq-relay on $PATH (e.g. installed with `cargo install moq-relay`)
-      """
+    opts = [
+      stderr_to_stdout: true,
+      log_output: :debug,
+      log_prefix: "moq-relay: ",
+      exit_status_to_reason: &{:moq_relay_exited, &1}
+    ]
+
+    Supervisor.child_spec({MuonTrap.Daemon, [binary, args, opts]},
+      id: __MODULE__,
+      restart: :temporary
+    )
+  end
+
+  defp find_binary!(opts) do
+    case opts[:binary] || System.get_env("MOQ_RELAY") do
+      nil ->
+        System.find_executable("moq-relay") ||
+          raise """
+          no moq-relay binary for the integration tests; provide one of:
+            * the :binary option — path to a moq-relay binary
+            * MOQ_RELAY — path to a moq-relay binary
+            * moq-relay on $PATH (e.g. installed with `cargo install moq-relay`)
+          """
+
+      binary ->
+        System.find_executable(binary) ||
+          raise "moq-relay binary not found or not executable: #{inspect(binary)}"
+    end
   end
 
   defp free_port!() do
@@ -75,43 +95,24 @@ defmodule ExMoQ.Test.Relay do
     port_number
   end
 
-  defp write_config!(port_number) do
-    path = Path.join(System.tmp_dir!(), "ex-moq-test-relay-#{port_number}.toml")
-
-    File.write!(path, """
-    # Generated by #{inspect(__MODULE__)}; safe to delete.
-    [log]
-    level = "info"
-
-    [server]
-    tcp.bind = "127.0.0.1:#{port_number}"
-
-    [auth]
-    public = ""
-    """)
-
-    path
+  defp await_ready!(port_number, pid) do
+    await_ready_loop(port_number, pid, System.monotonic_time(:millisecond) + @ready_timeout_ms)
   end
 
-  defp await_ready!(port_number) do
-    deadline = System.monotonic_time(:millisecond) + @ready_timeout_ms
-    await_ready_loop(port_number, deadline)
-  end
-
-  defp await_ready_loop(port_number, deadline) do
+  defp await_ready_loop(port_number, pid, deadline) do
     cond do
+      not Process.alive?(pid) ->
+        raise "moq-relay exited before accepting connections"
+
       probe(port_number) ->
         :ok
 
       System.monotonic_time(:millisecond) > deadline ->
-        raise """
-        moq-relay did not become ready within #{@ready_timeout_ms} ms; \
-        its output is forwarded to the Logger at debug level
-        """
+        raise "moq-relay did not become ready within #{@ready_timeout_ms} ms"
 
       true ->
         Process.sleep(@probe_interval_ms)
-        await_ready_loop(port_number, deadline)
+        await_ready_loop(port_number, pid, deadline)
     end
   end
 

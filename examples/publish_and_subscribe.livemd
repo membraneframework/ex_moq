@@ -1,16 +1,42 @@
-<!-- livebook:{"autosave_interval_s":null} -->
+<!-- livebook:{"autosave_interval_s":null,"default_language":"python"} -->
 
 # ExMoQ publishing & subscribing
 
 ```elixir
 Mix.install([
   {:ex_moq, path: Path.join(__DIR__, "..")},
-  # optional dependency of ex_moq, required by ExMoQ.Test.Relay
-  {:muontrap, "~> 1.8"},
-  {:kino, "~> 0.14"}
+  {:kino, "~> 0.14"},
+  {:pythonx, "~> 0.4.2"},
+  {:kino_pythonx, "~> 0.1.0"}
 ])
 
 Logger.configure(level: :info)
+```
+
+```pyproject.toml
+[project]
+name = "ex_moq_example"
+version = "0.0.0"
+requires-python = "==3.13.*"
+dependencies = ["moq-rs"]
+```
+
+## The relay
+
+```python
+import threading, queue, asyncio, moq
+
+startup = queue.SimpleQueue()
+
+def run():
+    async def main():
+        async with moq.Server("127.0.0.1:0", tls_generate=["localhost"]) as server:
+            startup.put(server.local_addr)
+            await server.serve()
+    asyncio.run(main())
+
+threading.Thread(target=run, daemon=True).start()
+relay_addr = startup.get(timeout=10)
 ```
 
 ## Setup
@@ -19,14 +45,9 @@ Each MoQ track needs to be assigned to a broadcast.
 A broadcast is a collection of tracks, and a session is a collection of broadcasts.
 For details, see https://doc.moq.dev/concept/layer/moq-lite.html#terminology
 
-This notebook runs end-to-end against a self-hosted relay,
-so it needs a `moq-relay` binary, either on `$PATH`
-or pointed to by the `$MOQ_RELAY` environment variable.
-
 ```elixir
-{:ok, relay_pid} = Kino.start_child(ExMoQ.Test.Relay)
-%{url: url, disable_tls_verify?: disable_tls_verify?} = ExMoQ.Test.Relay.relay(relay_pid)
-
+url = "https://#{Pythonx.decode(relay_addr)}"
+disable_tls_verify? = true
 broadcast = "my_broadcast"
 track = "my_video_track"
 ```
@@ -41,11 +62,27 @@ alias ExMoQ.Native
 receive do
   :moq_connected -> :ok
 after
-  2_000 -> raise "timeout"
+  10_000 -> raise "timeout"
 end
 
 {:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
 ```
+
+Track metadata is described using the [hang](https://doc.moq.dev/concept/layer/hang.html) media format. Track formats are advertised through a `catalog.json` meta-track.
+
+`ex_moq` NIFs handle operating on the catalog for you.
+
+For MoQ publishers, you just need to ensure the format matches the data you're streaming so subscribers don't get confused.
+
+For subscribers, each change to the `catalog.json` track is reported as a
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+{:moq_catalog, renditions :: %{track() => track_format() | :unrecognized}}
+```
+
+message sent to the configured process, containing the latest catalog snapshot. Subscribers are expected to react to these changes appropriately, e.g. when the format of a track changes in-place.
 
 ```elixir
 alias ExMoQ.WebCodecs
@@ -59,7 +96,7 @@ format = %WebCodecs.VideoTrackFormat{
 }
 
 :ok =
-  Native.add_track(producer, track, format, _priority = nil, :legacy, _latency_ns = 0)
+  Native.add_track(producer, track, format, _priority = nil, :loc, _latency_ns = 0)
 ```
 
 ```elixir
@@ -103,7 +140,7 @@ require Logger
      receive do
        :moq_connected -> :ok
      after
-       2_000 -> raise "timeout"
+       10_000 -> raise "timeout"
      end
 
      {:ok, consumer} =
@@ -142,6 +179,12 @@ require Logger
      end)
      |> Stream.run()
    end})
+```
+
+Updating a track's format in-place is supported to a limited extent. Changing the media kind is not allowed (e.g. audio -> video).
+
+```elixir
+Native.update_track(producer, track, %{format | params: %{format.params | height: 600}})
 ```
 
 ```elixir

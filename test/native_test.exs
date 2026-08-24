@@ -4,15 +4,15 @@ defmodule ExMoQ.NativeTest do
   use ExUnit.Case, async: true
 
   alias ExMoQ.Native
-  alias ExMoQ.WebCodecs
   alias ExMoQ.Test.Relay
+  alias ExMoQ.WebCodecs
 
   @moduletag :integration
 
   @track "video"
 
   setup_all do
-    [relay: Relay.start_supervised!()]
+    [relay: Relay.start!()]
   end
 
   setup do
