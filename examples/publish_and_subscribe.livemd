@@ -1,5 +1,3 @@
-<!-- livebook:{"autosave_interval_s":null,"default_language":"python"} -->
-
 # ExMoQ publishing & subscribing
 
 ```elixir
