@@ -16,8 +16,8 @@ defmodule ExMoQ.Test.Relay do
   `:ex_moq`, so the host project must depend on it directly:
   `{:muontrap, "~> 1.8", only: :test}`.
 
-  The moq-relay binary is resolved from the `:binary` option, the `MOQ_RELAY`
-  environment variable, or `$PATH`.
+  [moq-relay](https://doc.moq.dev/bin/relay) must be available in the environment:
+  For how the binary path gets resolved, see `find_binary/1`.
 
   The relay listens on TCP for lossless transport, but groups can still be
   dropped as part of eviction policies.
@@ -41,11 +41,30 @@ defmodule ExMoQ.Test.Relay do
   """
   @spec start_supervised!([option()]) :: relay()
   def start_supervised!(opts \\ []) do
-    binary = find_binary!(opts)
+    binary =
+      find_binary(opts) ||
+        raise """
+        no moq-relay binary for the integration tests; provide one of:
+          * the :binary option — path to a moq-relay binary
+          * MOQ_RELAY — path to a moq-relay binary
+          * moq-relay on $PATH (e.g. installed with `cargo install moq-relay`)
+        """
+
     port_number = free_port!()
     pid = ExUnit.Callbacks.start_supervised!(daemon_spec(binary, port_number))
     await_ready!(port_number, pid)
     %{url: "tcp://127.0.0.1:#{port_number}", disable_tls_verify?: false}
+  end
+
+  @doc """
+  Resolves the path of the moq-relay binary from the `:binary` option, the
+  `$MOQ_RELAY` environment variable, or `$PATH`; returns `nil` if none of them
+  yields an executable.
+  """
+  @spec find_binary([option()]) :: Path.t() | nil
+  def find_binary(opts \\ []) do
+    binary = opts[:binary] || System.get_env("MOQ_RELAY") || "moq-relay"
+    System.find_executable(binary)
   end
 
   defp daemon_spec(binary, port_number) do
@@ -69,23 +88,6 @@ defmodule ExMoQ.Test.Relay do
       id: __MODULE__,
       restart: :temporary
     )
-  end
-
-  defp find_binary!(opts) do
-    case opts[:binary] || System.get_env("MOQ_RELAY") do
-      nil ->
-        System.find_executable("moq-relay") ||
-          raise """
-          no moq-relay binary for the integration tests; provide one of:
-            * the :binary option — path to a moq-relay binary
-            * MOQ_RELAY — path to a moq-relay binary
-            * moq-relay on $PATH (e.g. installed with `cargo install moq-relay`)
-          """
-
-      binary ->
-        System.find_executable(binary) ||
-          raise "moq-relay binary not found or not executable: #{inspect(binary)}"
-    end
   end
 
   defp free_port!() do
