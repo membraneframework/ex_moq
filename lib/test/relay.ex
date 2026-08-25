@@ -26,7 +26,7 @@ defmodule ExMoQ.Test.Relay do
   @ready_timeout_ms 15_000
   @probe_interval_ms 100
 
-  @type relay :: %{url: String.t(), disable_tls_verify?: true}
+  @type relay :: %{url: String.t(), disable_tls_verify?: boolean()}
   @type option :: {:binary, Path.t()}
 
   @doc """

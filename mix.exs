@@ -19,7 +19,7 @@ defmodule ExMoQ.MixProject do
       package: package(),
 
       # docs
-      name: "Rustler bindings for moq-dev",
+      name: "ExMoQ",
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membrane.stream",
@@ -34,7 +34,6 @@ defmodule ExMoQ.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_env), do: ["lib"]
 
   defp deps do

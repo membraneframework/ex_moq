@@ -77,7 +77,7 @@ For subscribers, each change to the `catalog.json` track is reported as a
 <!-- livebook:{"force_markdown":true} -->
 
 ```elixir
-{:moq_catalog, renditions :: %{track() => track_format() | :unrecognized}}
+{:moq_catalog, broadcast, renditions :: %{track() => track_format() | :unrecognized}}
 ```
 
 message sent to the configured process, containing the latest catalog snapshot. Subscribers are expected to react to these changes appropriately, e.g. when the format of a track changes in-place.
