@@ -47,7 +47,8 @@ defmodule ExMoQ.MixProject do
 
   defp dialyzer() do
     opts = [
-      flags: [:error_handling]
+      flags: [:error_handling],
+      plt_add_apps: [:ex_unit]
     ]
 
     if System.get_env("CI") == "true" do
