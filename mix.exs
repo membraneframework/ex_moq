@@ -24,7 +24,6 @@ defmodule ExMoQ.MixProject do
       docs: docs(),
       homepage_url: "https://membrane.stream",
       aliases: [docs: ["docs", &append_llms_links/1]]
-
     ]
   end
 
@@ -101,5 +100,4 @@ defmodule ExMoQ.MixProject do
       IO.warn("#{path} not found — llms.txt was not generated, check your ex_doc configuration")
     end
   end
-
 end
