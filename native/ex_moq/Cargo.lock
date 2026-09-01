@@ -127,6 +127,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
+
+[[package]]
 name = "asn1-rs"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -962,9 +968,8 @@ checksum = "253b313319f7109de64e480ffb606f89475cd758bae82e096e00c5d95341d30e"
 
 [[package]]
 name = "hang"
-version = "0.20.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "589242ee78fc98effc9187b0be2060533312fe1217c737567b0aa233fc437711"
+version = "0.20.7"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1467,9 +1472,8 @@ dependencies = [
 
 [[package]]
 name = "kio"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fa984c3b737520c30b414041ec63b013614abba31418585d83c5c792fb5bb7d"
+version = "0.5.6"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "loom",
  "smallvec",
@@ -1611,8 +1615,7 @@ dependencies = [
 [[package]]
 name = "moq-flate"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c7fb9c1c34a59487494ab90f74230f504f440fb3682397a6623d72f656abef7"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "bytes",
  "flate2",
@@ -1621,9 +1624,8 @@ dependencies = [
 
 [[package]]
 name = "moq-json"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05ab0e0a10701767b8f80d2980114850d8cd84f1929e4aff88cd71dcc016d89f"
+version = "0.3.6"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "bytes",
  "json-patch",
@@ -1639,9 +1641,8 @@ dependencies = [
 
 [[package]]
 name = "moq-loc"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59047a17afded7796f009bfbc51c92ef210be5e523417c7c87dd53f0a6f9ced2"
+version = "0.2.2"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "bytes",
  "moq-net",
@@ -1651,8 +1652,7 @@ dependencies = [
 [[package]]
 name = "moq-msf"
 version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df8f9a6121082c2536d4af7f4ed13f27e4a1a1eefe90b6e7657fc57bf7bc4934"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "serde",
  "serde_json",
@@ -1661,9 +1661,8 @@ dependencies = [
 
 [[package]]
 name = "moq-mux"
-version = "0.9.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aebe51da39b673e4785be1e6c83be8c095da78b5380755cf3fcc14a2d5e7d90f"
+version = "0.9.10"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -1694,9 +1693,9 @@ dependencies = [
 
 [[package]]
 name = "moq-native"
-version = "0.19.12"
+version = "0.19.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6058e1958ce277bd9e631b30137498a541617882ea7d27efb9aadb0e27ebba13"
+checksum = "4c98baa5038e449ddb837a09d4e47c642abf56cfa75b685741bc31b1b47bd960"
 dependencies = [
  "clap",
  "dns-lookup",
@@ -1735,16 +1734,17 @@ dependencies = [
 
 [[package]]
 name = "moq-net"
-version = "0.2.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97c03b3d222f9271b1b11ccbb8805472391954facd0c68d1e0522df4a5dcad28"
+version = "0.2.15"
+source = "git+https://github.com/moq-dev/moq.git?branch=claude%2Fgithub-issue-3258-main#11190eba330c04b89664bb21bde8b6687ed35248"
 dependencies = [
+ "arrayvec",
  "bytes",
  "futures",
  "kio",
  "num_enum",
  "rand 0.10.2",
  "serde",
+ "slab",
  "thiserror 2.0.20",
  "tracing",
  "web-async",
