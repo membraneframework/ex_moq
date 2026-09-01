@@ -2,3 +2,11 @@
 resolver = "2"
 
 members = ["native/ex_moq"]
+
+# Temporary: test unreleased moq-mux fix (github issue 3258). All moq crates
+# must come from the same source, otherwise moq-net/hang types get duplicated.
+[patch.crates-io]
+moq-mux = { git = "https://github.com/moq-dev/moq.git", branch = "claude/github-issue-3258-main" }
+moq-net = { git = "https://github.com/moq-dev/moq.git", branch = "claude/github-issue-3258-main" }
+hang = { git = "https://github.com/moq-dev/moq.git", branch = "claude/github-issue-3258-main" }
+kio = { git = "https://github.com/moq-dev/moq.git", branch = "claude/github-issue-3258-main" }
