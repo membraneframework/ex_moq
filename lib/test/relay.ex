@@ -71,7 +71,7 @@ defmodule ExMoQ.Test.Relay do
     args = [
       "--log-level",
       "info",
-      "--server-tcp-bind",
+      "--listen-tcp-bind",
       "127.0.0.1:#{port_number}",
       "--auth-public",
       ""
