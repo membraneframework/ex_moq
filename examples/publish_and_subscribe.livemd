@@ -85,12 +85,10 @@ message sent to the configured process, containing the latest catalog snapshot. 
 ```elixir
 alias ExMoQ.WebCodecs
 
-avc_decoder_config_record = <<>>
-
 format = %WebCodecs.VideoTrackFormat{
   params: %WebCodecs.VideoTrackParams{width: 1280, height: 720, framerate: 30.0},
-  description: avc_decoder_config_record,
-  codec: %WebCodecs.H264Codec{in_band: false, profile: 100, constraints: 0, level: 31}
+  description: <<>>, # empty DCR
+  codec: %WebCodecs.H264Codec{in_band: true, profile: 100, constraints: 0, level: 31}
 }
 
 :ok =
