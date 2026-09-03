@@ -26,20 +26,22 @@ defmodule ExMoQ.Test.Relay do
   @ready_timeout_ms 15_000
   @probe_interval_ms 100
 
-  @type relay :: %{url: String.t(), disable_tls_verify?: boolean()}
+  @enforce_keys [:url, :disable_tls_verify?, :id]
+  defstruct @enforce_keys
+
+  @type t :: %__MODULE__{url: String.t(), disable_tls_verify?: boolean(), id: term()}
   @type option :: {:binary, Path.t()}
 
   @doc """
   Starts a relay under the ExUnit test supervisor and blocks until it
   accepts connections.
 
-  The relay can be stopped mid-test with `stop_supervised!(#{inspect(__MODULE__)})`,
-  e.g. to observe session-drop handling.
+  The relay can be stopped mid-test with `stop_supervised!/1`.
 
   Raises if no moq-relay binary is found, or if the relay exits or does not
   accept connections within #{@ready_timeout_ms} ms.
   """
-  @spec start_supervised!([option()]) :: relay()
+  @spec start_supervised!([option()]) :: t()
   def start_supervised!(opts \\ []) do
     binary =
       find_binary(opts) ||
@@ -51,10 +53,18 @@ defmodule ExMoQ.Test.Relay do
         """
 
     port_number = free_port!()
-    pid = ExUnit.Callbacks.start_supervised!(daemon_spec(binary, port_number))
+    id = {__MODULE__, port_number}
+    pid = ExUnit.Callbacks.start_supervised!(daemon_spec(binary, port_number, id))
     await_ready!(port_number, pid)
-    %{url: "tcp://127.0.0.1:#{port_number}", disable_tls_verify?: false}
+    %__MODULE__{url: "tcp://127.0.0.1:#{port_number}", disable_tls_verify?: false, id: id}
   end
+
+  @doc """
+  Stops a relay started with `start_supervised!/1`, blocking until it is down.
+  """
+  @spec stop_supervised!(t()) :: :ok
+  def stop_supervised!(%__MODULE__{id: id}),
+    do: ExUnit.Callbacks.stop_supervised!(id)
 
   @doc """
   Resolves the path of the moq-relay binary from the `:binary` option, the
@@ -67,7 +77,7 @@ defmodule ExMoQ.Test.Relay do
     System.find_executable(binary)
   end
 
-  defp daemon_spec(binary, port_number) do
+  defp daemon_spec(binary, port_number, id) do
     args = [
       "--log-level",
       "info",
@@ -85,7 +95,7 @@ defmodule ExMoQ.Test.Relay do
     ]
 
     Supervisor.child_spec({MuonTrap.Daemon, [binary, args, opts]},
-      id: {__MODULE__, port_number},
+      id: id,
       restart: :temporary
     )
   end
