@@ -4,8 +4,8 @@ defmodule ExMoQ.NativeTest do
   use ExUnit.Case, async: true
 
   alias ExMoQ.Native
-  alias ExMoQ.Native.WebCodecs
   alias ExMoQ.Test.Relay
+  alias ExMoQ.WebCodecs
 
   @moduletag :integration
 
@@ -75,29 +75,30 @@ defmodule ExMoQ.NativeTest do
     {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
-    :ok = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
-    await_renditions(broadcast, &match?([{@track, %WebCodecs.VideoTrackFormat{}}], &1))
+    track_format = h264_format()
+    :ok = Native.add_track(producer, @track, track_format, 60, :legacy, 0)
+
+    await_renditions(broadcast, &(&1 == %{@track => track_format}))
 
     # A name the broadcast already carries cannot be added again.
-    assert {:error, _reason} = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
+    assert {:error, _reason} = Native.add_track(producer, @track, track_format, 60, :legacy, 0)
 
     :ok = Native.remove_track(producer, @track)
-    await_renditions(broadcast, &(&1 == []))
+    await_renditions(broadcast, &(&1 == %{}))
 
     # An update under the removed name must not resurrect its rendition.
-    assert {:error, _reason} = Native.update_track(producer, @track, h264_format())
+    assert {:error, _reason} = Native.update_track(producer, @track, track_format)
     refute_receive {:moq_catalog, _path, _renditions}, 500
 
     # The name is free for reuse, and updates then target the successor track.
-    :ok = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
-    await_renditions(broadcast, &match?([{@track, %WebCodecs.VideoTrackFormat{}}], &1))
+    :ok = Native.add_track(producer, @track, track_format, 60, :legacy, 0)
 
-    assert :ok = Native.update_track(producer, @track, h264_format(1920))
+    await_renditions(broadcast, &(&1 == %{@track => track_format}))
 
-    await_renditions(
-      broadcast,
-      &match?([{@track, %WebCodecs.VideoTrackFormat{params: %{width: 1920}}}], &1)
-    )
+    track_format2 = h264_format(1920)
+    assert :ok = Native.update_track(producer, @track, track_format2)
+
+    await_renditions(broadcast, &(&1 == %{@track => track_format2}))
 
     :ok = Native.close_broadcast_consumer(consumer)
     :ok = Native.close_broadcast_producer(producer)
@@ -136,9 +137,10 @@ defmodule ExMoQ.NativeTest do
     {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
-    :ok = Native.add_track(producer, @track, h264_format(), 60, :legacy, 0)
+    track_format = h264_format()
+    :ok = Native.add_track(producer, @track, track_format, 60, :legacy, 0)
 
-    await_renditions(broadcast, &match?([{@track, %WebCodecs.VideoTrackFormat{}}], &1))
+    await_renditions(broadcast, &(&1 == %{@track => track_format}))
 
     early_token = 1
     :ok = Native.subscribe_track(consumer, @track, early_token, 60)

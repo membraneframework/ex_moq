@@ -1,4 +1,4 @@
-defmodule ExMoQ.Native.WebCodecs do
+defmodule ExMoQ.WebCodecs do
   @moduledoc """
   Track formats expressed in WebCodecs terms:
   codec-agnostic decoder parameters plus the per-codec fields
