@@ -85,7 +85,7 @@ defmodule ExMoQ.Test.Relay do
     ]
 
     Supervisor.child_spec({MuonTrap.Daemon, [binary, args, opts]},
-      id: __MODULE__,
+      id: {__MODULE__, port_number},
       restart: :temporary
     )
   end
