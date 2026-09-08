@@ -14,6 +14,7 @@ use tokio::task::AbortHandle;
 
 use crate::messages::{self, Token};
 use crate::runtime;
+use crate::subscription::Subscription;
 use crate::track_format::{CatalogContainer, WireContainer};
 
 use subscriptions::Subscriptions;
@@ -81,7 +82,7 @@ enum Command {
     Subscribe {
         track: String,
         token: Token,
-        priority: Option<u8>,
+        params: Subscription,
     },
     Unsubscribe {
         token: Token,
@@ -105,13 +106,13 @@ impl Handle {
         &self,
         track: String,
         token: Token,
-        priority: Option<u8>,
+        params: Subscription,
     ) -> Result<(), Closed> {
         self.commands
             .send(Command::Subscribe {
                 track,
                 token,
-                priority,
+                params,
             })
             .map_err(|_push_error| Closed)
     }
@@ -158,6 +159,7 @@ struct Driver {
     env: OwnedEnv,
     pid: LocalPid,
     path: String,
+    latency: Duration,
     commands: mpsc::UnboundedReceiver<Command>,
     catalog: moq_mux::catalog::Consumer<()>,
     renditions: HashMap<String, Rendition>,
@@ -193,9 +195,10 @@ impl Driver {
             pid,
             path,
             commands,
+            latency,
             catalog,
             renditions: HashMap::new(),
-            subs: Subscriptions::new(broadcast, latency),
+            subs: Subscriptions::new(broadcast),
         }
         .run()
         .await
@@ -229,12 +232,16 @@ impl Driver {
             Some(Command::Subscribe {
                 track,
                 token,
-                priority,
+                params,
             }) => {
                 let result = self.get_rendition(&track).and_then(|(kind, container)| {
-                    let priority = priority.unwrap_or(kind.default_priority());
-                    self.subs
-                        .subscribe(token, self.pid, track, container, priority)
+                    self.subs.subscribe(
+                        token,
+                        self.pid,
+                        track,
+                        container,
+                        resolve_subscription(params, kind, self.latency),
+                    )
                 });
 
                 match result.or_else(|e| {
@@ -293,6 +300,22 @@ impl Driver {
 
         Ok((rendition.kind, container))
     }
+}
+
+fn resolve_subscription(
+    params: Subscription,
+    kind: Kind,
+    consumer_latency: Duration,
+) -> moq_net::track::Subscription {
+    moq_net::track::Subscription::default()
+        .with_priority(params.priority.unwrap_or(kind.default_priority()))
+        .with_group_start(params.group_start)
+        .with_latency_max(
+            params
+                .latency_ns
+                .map(Duration::from_nanos)
+                .unwrap_or(consumer_latency),
+        )
 }
 
 fn advertised_renditions(catalog: &moq_mux::catalog::hang::Catalog) -> HashMap<String, Rendition> {

@@ -33,7 +33,7 @@ defmodule ExMoQ.NativeTest do
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
     ghost_token = 1
-    :ok = Native.subscribe_track(consumer, "ghost", ghost_token, 60)
+    :ok = Native.subscribe_track(consumer, "ghost", ghost_token, %ExMoQ.Subscription{})
     assert_receive {:moq_track_error, ^ghost_token, _reason}, 10_000
 
     :ok = Native.close_broadcast_consumer(consumer)
@@ -143,7 +143,7 @@ defmodule ExMoQ.NativeTest do
     await_renditions(broadcast, &(&1 == %{@track => track_format}))
 
     early_token = 1
-    :ok = Native.subscribe_track(consumer, @track, early_token, 60)
+    :ok = Native.subscribe_track(consumer, @track, early_token, %ExMoQ.Subscription{})
 
     :ok = Native.send_frame(producer, @track, 0, true, "before")
     assert_receive {:moq_frame, ^early_token, "before", _timestamp, true}, 10_000
@@ -153,7 +153,7 @@ defmodule ExMoQ.NativeTest do
     # Consumer commands are processed in order, so once a frame reaches this
     # later subscription the unsubscribe has been handled too.
     late_token = 2
-    :ok = Native.subscribe_track(consumer, @track, late_token, 60)
+    :ok = Native.subscribe_track(consumer, @track, late_token, %ExMoQ.Subscription{})
 
     :ok = Native.send_frame(producer, @track, 40_000_000, true, "after")
 
@@ -161,6 +161,73 @@ defmodule ExMoQ.NativeTest do
     # the unsubscribed one must stay silent.
     assert_receive {:moq_frame, ^late_token, "after", _timestamp, true}, 10_000
     refute_receive {:moq_frame, ^early_token, _payload, _timestamp, _keyframe?}, 500
+
+    :ok = Native.close_broadcast_consumer(consumer)
+    :ok = Native.close_broadcast_producer(producer)
+    :ok = Native.close_session(sub_session)
+    :ok = Native.close_session(pub_session)
+  end
+
+  test "group_start and latency_ns reach the wire: a catch-up join replays every cached group", %{
+    broadcast: broadcast,
+    relay: relay
+  } do
+    {:ok, pub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, sub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    assert_receive :moq_connected, 10_000
+    assert_receive :moq_connected, 10_000
+
+    {:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
+    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
+    assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
+
+    track_format = h264_format()
+    :ok = Native.add_track(producer, @track, track_format, 60, :legacy, 0)
+    await_renditions(broadcast, &(&1 == %{@track => track_format}))
+
+    # Eight groups sit in the publisher's cache before anyone subscribes. A
+    # live-edge join would see only the newest; a zero latency budget would
+    # skip most of the catch-up burst. Eight is enough that a lost latency
+    # budget never delivers the whole burst by luck (three groups did, ~2%).
+    frames_per_group = 5
+    groups_before = 8
+
+    publish_group = fn group ->
+      for frame <- 0..(frames_per_group - 1) do
+        timestamp_ns = (group * frames_per_group + frame) * 40_000_000
+        :ok = Native.send_frame(producer, @track, timestamp_ns, frame == 0, "g#{group}f#{frame}")
+      end
+    end
+
+    Enum.each(0..(groups_before - 1), publish_group)
+
+    token = 1
+
+    :ok =
+      Native.subscribe_track(consumer, @track, token, %ExMoQ.Subscription{
+        group_start: 0,
+        latency_ns: 10_000_000_000
+      })
+
+    # One more group after the subscribe, so delivery never rests on a
+    # cached-only track. The track stays open until the last frame lands: the
+    # relay subscribes upstream lazily, and a subscribe that reaches the
+    # publisher after remove_track fails with a track-info error.
+    publish_group.(groups_before)
+
+    expected =
+      for group <- 0..groups_before, frame <- 0..(frames_per_group - 1), do: "g#{group}f#{frame}"
+
+    received =
+      for _ <- expected do
+        assert_receive {:moq_frame, ^token, payload, _timestamp, _keyframe?}, 10_000
+        payload
+      end
+
+    assert received == expected
+
+    :ok = Native.remove_track(producer, @track)
+    assert_receive {:moq_track_finished, ^token}, 10_000
 
     :ok = Native.close_broadcast_consumer(consumer)
     :ok = Native.close_broadcast_producer(producer)

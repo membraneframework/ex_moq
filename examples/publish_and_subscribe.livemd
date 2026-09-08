@@ -150,7 +150,7 @@ require Logger
      end
 
      # `token` is any integer you choose; it tags this subscription's messages.
-     :ok = Native.subscribe_track(consumer, track, _token = 1, _priority = nil)
+     :ok = Native.subscribe_track(consumer, track, _token = 1, %ExMoQ.Subscription{})
 
      handle_frame = fn step, payload, timestamp_ns, keyframe? ->
        IO.puts(

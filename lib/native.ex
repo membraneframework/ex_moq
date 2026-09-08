@@ -211,9 +211,9 @@ defmodule ExMoQ.Native do
         when the subscription fails on the native side
         while the track may still be advertised in the catalog
   """
-  @spec subscribe_track(broadcast_consumer(), track(), token(), 0..255 | nil) ::
+  @spec subscribe_track(broadcast_consumer(), track(), token(), ExMoQ.Subscription.t()) ::
           :ok | {:error, :consumer_closed}
-  def subscribe_track(_broadcast_consumer, _track, _token, _priority),
+  def subscribe_track(_broadcast_consumer, _track, _token, _parameters),
     do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
