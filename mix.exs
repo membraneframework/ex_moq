@@ -19,12 +19,11 @@ defmodule ExMoQ.MixProject do
       package: package(),
 
       # docs
-      name: "Rustler bindings for moq-dev",
+      name: "ExMoQ",
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membrane.stream",
       aliases: [docs: ["docs", &append_llms_links/1]]
-
     ]
   end
 
@@ -34,7 +33,6 @@ defmodule ExMoQ.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_env), do: ["lib"]
 
   defp deps do
@@ -49,7 +47,8 @@ defmodule ExMoQ.MixProject do
 
   defp dialyzer() do
     opts = [
-      flags: [:error_handling]
+      flags: [:error_handling],
+      plt_add_apps: [:ex_unit]
     ]
 
     if System.get_env("CI") == "true" do
@@ -75,7 +74,7 @@ defmodule ExMoQ.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md", "LICENSE"],
+      extras: ["README.md", "LICENSE", "examples/publish_and_subscribe.livemd"],
       source_ref: "v#{@version}",
       nest_modules_by_prefix: [ExMoQ]
     ]
@@ -102,5 +101,4 @@ defmodule ExMoQ.MixProject do
       IO.warn("#{path} not found — llms.txt was not generated, check your ex_doc configuration")
     end
   end
-
 end

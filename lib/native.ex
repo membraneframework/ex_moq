@@ -4,7 +4,7 @@ defmodule ExMoQ.Native do
   """
   use Rustler, otp_app: :ex_moq, crate: "ex_moq"
 
-  alias ExMoQ.Native.WebCodecs
+  alias ExMoQ.WebCodecs
 
   @type session :: reference()
   @type broadcast_producer :: reference()
@@ -82,6 +82,12 @@ defmodule ExMoQ.Native do
   built from WebCodecs-style structs (see `ExMoQ.Native.WebCodecs`).
   """
   @type track_format() :: WebCodecs.VideoTrackFormat.t() | WebCodecs.AudioTrackFormat.t()
+
+  @typedoc """
+  A full catalog snapshot: every track the broadcast currently advertises, keyed by track name.
+  A rendition whose codec the bindings don't model is reported as `:unrecognized`.
+  """
+  @type renditions() :: %{track() => track_format() | :unrecognized}
 
   @doc """
   Adds a track of any supported codec to the given broadcast.
@@ -169,7 +175,7 @@ defmodule ExMoQ.Native do
         once the broadcast is announced and its catalog is subscribed
     * `{:moq_broadcast_closed, path :: String.t(), reason :: close_reason()}`
         when the broadcast ends, errors, or the session closes underneath it
-    * `{:moq_catalog, path :: String.t(), renditions :: [{track(), track_format() | :unrecognized}]}`
+    * `{:moq_catalog, path :: String.t(), renditions :: renditions()}`
         with the full catalog snapshot, once the broadcast is announced
         and again on every catalog update.
         Diffing consecutive snapshots is the caller's job:
