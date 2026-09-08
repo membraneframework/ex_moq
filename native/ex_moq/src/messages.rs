@@ -106,25 +106,35 @@ pub(crate) fn send_catalog(
     catalog: &moq_mux::catalog::hang::Catalog,
 ) -> Result<(), PidDead> {
     env.send_and_clear(&pid, |env| {
-        let videos = catalog.video.renditions.iter().map(|(name, config)| {
-            (
-                name.as_str(),
-                match VideoTrackFormat::try_from(config) {
-                    Ok(format) => format.encode(env),
-                    Err(unrecognized) => unrecognized.encode(env),
-                },
-            )
-        });
+        let videos = catalog
+            .video
+            .renditions
+            .iter()
+            .filter(|(name, _)| !catalog.audio.renditions.contains_key(*name))
+            .map(|(name, config)| {
+                (
+                    name.as_str(),
+                    match VideoTrackFormat::try_from(config) {
+                        Ok(format) => format.encode(env),
+                        Err(unrecognized) => unrecognized.encode(env),
+                    },
+                )
+            });
 
-        let audios = catalog.audio.renditions.iter().map(|(name, config)| {
-            (
-                name.as_str(),
-                match AudioTrackFormat::try_from(config) {
-                    Ok(format) => format.encode(env),
-                    Err(unrecognized) => unrecognized.encode(env),
-                },
-            )
-        });
+        let audios = catalog
+            .audio
+            .renditions
+            .iter()
+            .filter(|(name, _)| !catalog.video.renditions.contains_key(*name))
+            .map(|(name, config)| {
+                (
+                    name.as_str(),
+                    match AudioTrackFormat::try_from(config) {
+                        Ok(format) => format.encode(env),
+                        Err(unrecognized) => unrecognized.encode(env),
+                    },
+                )
+            });
 
         let renditions: HashMap<&str, Term> = videos.chain(audios).collect();
 
