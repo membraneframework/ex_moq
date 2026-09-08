@@ -19,7 +19,9 @@ requires-python = "==3.13.*"
 dependencies = ["moq-rs"]
 ```
 
-## The relay
+## Setup
+
+MoQ uses [relays](https://doc.moq.dev/bin/relay/#moq-relay) for distribution. This livebook hosts its own to show usage of ex_moq.
 
 ```python
 import threading, queue, asyncio, moq
@@ -36,8 +38,6 @@ def run():
 threading.Thread(target=run, daemon=True).start()
 relay_addr = startup.get(timeout=10)
 ```
-
-## Setup
 
 Each MoQ track needs to be assigned to a broadcast.
 A broadcast is a collection of tracks, and a session is a collection of broadcasts.
