@@ -168,7 +168,7 @@ defmodule ExMoQ.NativeTest do
     :ok = Native.close_session(pub_session)
   end
 
-  test "group_start and latency_ns reach the wire: a catch-up join replays every cached group", %{
+  test "a subscription joining late with `group_start: 0` receives all cached groups", %{
     broadcast: broadcast,
     relay: relay
   } do
@@ -185,10 +185,6 @@ defmodule ExMoQ.NativeTest do
     :ok = Native.add_track(producer, @track, track_format, 60, :legacy, 0)
     await_renditions(broadcast, &(&1 == %{@track => track_format}))
 
-    # Eight groups sit in the publisher's cache before anyone subscribes. A
-    # live-edge join would see only the newest; a zero latency budget would
-    # skip most of the catch-up burst. Eight is enough that a lost latency
-    # budget never delivers the whole burst by luck (three groups did, ~2%).
     frames_per_group = 5
     groups_before = 8
 
@@ -209,17 +205,13 @@ defmodule ExMoQ.NativeTest do
         latency_ns: 10_000_000_000
       })
 
-    # One more group after the subscribe, so delivery never rests on a
-    # cached-only track. The track stays open until the last frame lands: the
-    # relay subscribes upstream lazily, and a subscribe that reaches the
-    # publisher after remove_track fails with a track-info error.
     publish_group.(groups_before)
 
     expected =
       for group <- 0..groups_before, frame <- 0..(frames_per_group - 1), do: "g#{group}f#{frame}"
 
     received =
-      for _ <- expected do
+      for _payload <- expected do
         assert_receive {:moq_frame, ^token, payload, _timestamp, _keyframe?}, 10_000
         payload
       end
