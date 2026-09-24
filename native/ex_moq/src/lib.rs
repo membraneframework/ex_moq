@@ -104,7 +104,7 @@ fn close_session(session: ResourceArc<SessionResource>) -> Atom {
 #[rustler::nif]
 fn create_broadcast_producer(
     session: ResourceArc<SessionResource>,
-    path: &str,
+    path: String,
 ) -> NifResult<(Atom, ResourceArc<BroadcastProducerResource>)> {
     let producer =
         broadcast_producer::Producer::new(&session.0, path).map_err(|e| nif_error!("{e}"))?;
@@ -162,6 +162,7 @@ fn update_track(
         .map_err(|e| match e {
             UpdateTrackError::UnknownTrack => nif_error!(atoms::unknown_track()),
             UpdateTrackError::KindMismatch => nif_error!(atoms::kind_mismatch()),
+            other => nif_error!("{other}"),
         })?;
 
     Ok(ok())
