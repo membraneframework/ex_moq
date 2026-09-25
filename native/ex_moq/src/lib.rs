@@ -12,6 +12,7 @@ mod broadcast_consumer;
 mod broadcast_producer;
 mod messages;
 mod session;
+mod subscription;
 mod track_format;
 mod web_codecs;
 
@@ -29,6 +30,8 @@ macro_rules! nif_error {
 }
 
 pub(crate) use nif_error;
+
+use crate::subscription::Subscription;
 
 pub(crate) mod atoms {
     rustler::atoms! {
@@ -201,11 +204,8 @@ fn create_broadcast_consumer(
     session: ResourceArc<SessionResource>,
     path: String,
     pid: LocalPid,
-    latency_ns: u64,
 ) -> (Atom, ResourceArc<BroadcastConsumerResource>) {
-    let latency = Duration::from_nanos(latency_ns);
-
-    let consumer = broadcast_consumer::spawn(&session.0, path, pid, latency);
+    let consumer = broadcast_consumer::spawn(&session.0, path, pid);
     (ok(), ResourceArc::new(BroadcastConsumerResource(consumer)))
 }
 
@@ -214,11 +214,11 @@ fn subscribe_track(
     consumer: ResourceArc<BroadcastConsumerResource>,
     track: String,
     token: Token,
-    priority: Option<u8>,
+    params: Subscription,
 ) -> NifResult<Atom> {
     consumer
         .0
-        .subscribe(track, token, priority)
+        .subscribe(track, token, params)
         .map_err(|_closed| nif_error!(atoms::consumer_closed()))?;
 
     Ok(ok())

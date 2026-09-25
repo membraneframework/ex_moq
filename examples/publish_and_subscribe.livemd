@@ -140,7 +140,7 @@ require Logger
      end
 
      {:ok, consumer} =
-       Native.create_broadcast_consumer(sub_session, broadcast, self(), _latency_ns = 0)
+       Native.create_broadcast_consumer(sub_session, broadcast, self())
 
      receive do
        {:moq_catalog, ^broadcast, renditions} when is_map_key(renditions, track) ->
@@ -150,7 +150,7 @@ require Logger
      end
 
      # `token` is any integer you choose; it tags this subscription's messages.
-     :ok = Native.subscribe_track(consumer, track, _token = 1, _priority = nil)
+     :ok = Native.subscribe_track(consumer, track, _token = 1, %ExMoQ.Subscription{})
 
      handle_frame = fn step, payload, timestamp_ns, keyframe? ->
        IO.puts(

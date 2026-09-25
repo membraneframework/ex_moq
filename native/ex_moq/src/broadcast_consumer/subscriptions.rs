@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::time::Duration;
 
 use rustler::{LocalPid, OwnedEnv};
 
@@ -15,16 +14,14 @@ type WireConsumer = moq_mux::container::Consumer<WireContainer>;
 
 pub(super) struct Subscriptions {
     broadcast: moq_net::broadcast::Consumer,
-    latency: Duration,
     tasks: JoinSet<(Token, Result<(), TrackError>)>,
     aborts: HashMap<Token, AbortHandle>,
 }
 
 impl Subscriptions {
-    pub(super) fn new(broadcast: moq_net::broadcast::Consumer, latency: Duration) -> Self {
+    pub(super) fn new(broadcast: moq_net::broadcast::Consumer) -> Self {
         Self {
             broadcast,
-            latency,
             tasks: JoinSet::new(),
             aborts: HashMap::new(),
         }
@@ -36,16 +33,15 @@ impl Subscriptions {
         pid: LocalPid,
         track: String,
         container: WireContainer,
-        priority: u8,
+        subscription: moq_net::track::Subscription,
     ) -> Result<(), TrackError> {
         let consumer = self
             .broadcast
             .track(&track)
             .map_err(TrackError::SubscribeFailed)?;
 
-        let latency = self.latency;
         let handle = self.tasks.spawn(async move {
-            let result = run_subscription(token, pid, consumer, container, priority, latency);
+            let result = run_subscription(token, pid, consumer, container, subscription);
             (token, result.await)
         });
 
@@ -93,12 +89,10 @@ async fn run_subscription(
     pid: LocalPid,
     consumer: moq_net::track::Consumer,
     container: WireContainer,
-    priority: u8,
-    latency: Duration,
+    subscription: moq_net::track::Subscription,
 ) -> Result<(), TrackError> {
-    let subscriber = consumer
-        .subscribe(moq_net::track::Subscription::default().with_priority(priority))
-        .await?;
+    let latency = subscription.latency_max;
+    let subscriber = consumer.subscribe(subscription).await?;
 
     let mut consumer = WireConsumer::new(subscriber, container).with_latency(latency);
 

@@ -167,9 +167,6 @@ defmodule ExMoQ.Native do
     * `.hang` -> hang
     * default -> hang
 
-  `latency_ns` is how long each track buffers received frames before emitting
-  them, in nanoseconds, trading delay for resilience to jitter and reordering.
-
   Sends to `pid`:
     * `{:moq_broadcast_ready, path :: String.t()}`
         once the broadcast is announced and its catalog is subscribed
@@ -183,9 +180,8 @@ defmodule ExMoQ.Native do
         under the same name, and the wire track of a live subscription keeps flowing.
         Unsubscribing on such a change is also the caller's call to make.
   """
-  @spec create_broadcast_consumer(session(), String.t(), pid(), non_neg_integer()) ::
-          {:ok, broadcast_consumer()}
-  def create_broadcast_consumer(_session, _path, _pid, _latency_ns),
+  @spec create_broadcast_consumer(session(), String.t(), pid()) :: {:ok, broadcast_consumer()}
+  def create_broadcast_consumer(_session, _path, _pid),
     do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
@@ -198,10 +194,6 @@ defmodule ExMoQ.Native do
   Keep tokens unique across all broadcast consumers reporting to the same pid.
   Don't reuse tokens.
 
-  `priority` is the subscription's delivery priority:
-  under congestion, tracks with a higher value are sent first.
-  When `nil`, hang's default for the track's media kind is used.
-
   Sends to the consumer's `pid`:
     * `{:moq_frame, token(), binary(), timestamp_ns :: non_neg_integer(), keyframe? :: boolean()}`
         for every received frame
@@ -211,9 +203,9 @@ defmodule ExMoQ.Native do
         when the subscription fails on the native side
         while the track may still be advertised in the catalog
   """
-  @spec subscribe_track(broadcast_consumer(), track(), token(), 0..255 | nil) ::
+  @spec subscribe_track(broadcast_consumer(), track(), token(), ExMoQ.Subscription.t()) ::
           :ok | {:error, :consumer_closed}
-  def subscribe_track(_broadcast_consumer, _track, _token, _priority),
+  def subscribe_track(_broadcast_consumer, _track, _token, _parameters),
     do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
