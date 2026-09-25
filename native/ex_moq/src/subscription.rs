@@ -5,5 +5,5 @@ use rustler::NifStruct;
 pub(crate) struct Subscription {
     pub priority: Option<u8>,
     pub group_start: Option<u64>,
-    pub latency_ns: Option<u64>,
+    pub latency_ns: u64,
 }

@@ -204,11 +204,8 @@ fn create_broadcast_consumer(
     session: ResourceArc<SessionResource>,
     path: String,
     pid: LocalPid,
-    latency_ns: u64,
 ) -> (Atom, ResourceArc<BroadcastConsumerResource>) {
-    let latency = Duration::from_nanos(latency_ns);
-
-    let consumer = broadcast_consumer::spawn(&session.0, path, pid, latency);
+    let consumer = broadcast_consumer::spawn(&session.0, path, pid);
     (ok(), ResourceArc::new(BroadcastConsumerResource(consumer)))
 }
 

@@ -167,9 +167,6 @@ defmodule ExMoQ.Native do
     * `.hang` -> hang
     * default -> hang
 
-  `latency_ns` is how long each track buffers received frames before emitting
-  them, in nanoseconds, trading delay for resilience to jitter and reordering.
-
   Sends to `pid`:
     * `{:moq_broadcast_ready, path :: String.t()}`
         once the broadcast is announced and its catalog is subscribed
@@ -183,9 +180,8 @@ defmodule ExMoQ.Native do
         under the same name, and the wire track of a live subscription keeps flowing.
         Unsubscribing on such a change is also the caller's call to make.
   """
-  @spec create_broadcast_consumer(session(), String.t(), pid(), non_neg_integer()) ::
-          {:ok, broadcast_consumer()}
-  def create_broadcast_consumer(_session, _path, _pid, _latency_ns),
+  @spec create_broadcast_consumer(session(), String.t(), pid()) :: {:ok, broadcast_consumer()}
+  def create_broadcast_consumer(_session, _path, _pid),
     do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """

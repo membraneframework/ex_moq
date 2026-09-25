@@ -29,7 +29,7 @@ defmodule ExMoQ.NativeTest do
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
-    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
+    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self())
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
     ghost_token = 1
@@ -72,7 +72,7 @@ defmodule ExMoQ.NativeTest do
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
-    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
+    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self())
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
     track_format = h264_format()
@@ -134,7 +134,7 @@ defmodule ExMoQ.NativeTest do
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
-    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
+    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self())
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
     track_format = h264_format()
@@ -178,7 +178,7 @@ defmodule ExMoQ.NativeTest do
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(pub_session, broadcast)
-    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self(), 0)
+    {:ok, consumer} = Native.create_broadcast_consumer(sub_session, broadcast, self())
     assert_receive {:moq_broadcast_ready, ^broadcast}, 10_000
 
     track_format = h264_format()

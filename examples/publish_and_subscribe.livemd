@@ -140,7 +140,7 @@ require Logger
      end
 
      {:ok, consumer} =
-       Native.create_broadcast_consumer(sub_session, broadcast, self(), _latency_ns = 0)
+       Native.create_broadcast_consumer(sub_session, broadcast, self())
 
      receive do
        {:moq_catalog, ^broadcast, renditions} when is_map_key(renditions, track) ->

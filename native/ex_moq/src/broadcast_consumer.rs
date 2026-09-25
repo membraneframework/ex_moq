@@ -126,12 +126,7 @@ impl Handle {
     }
 }
 
-pub(crate) fn spawn(
-    session: &crate::session::Handle,
-    path: String,
-    pid: LocalPid,
-    latency: Duration,
-) -> Handle {
+pub(crate) fn spawn(session: &crate::session::Handle, path: String, pid: LocalPid) -> Handle {
     let origin = session.subscribe.consume();
     let (commands_tx, commands_rx) = mpsc::unbounded_channel();
 
@@ -145,7 +140,7 @@ pub(crate) fn spawn(
                 reason: Some(CloseReason::Crashed),
             };
 
-            guard.reason = Driver::run_broadcast(origin, path, pid, latency, commands_rx).await;
+            guard.reason = Driver::run_broadcast(origin, path, pid, commands_rx).await;
         }
     });
 
@@ -159,7 +154,6 @@ struct Driver {
     env: OwnedEnv,
     pid: LocalPid,
     path: String,
-    latency: Duration,
     commands: mpsc::UnboundedReceiver<Command>,
     catalog: moq_mux::catalog::Consumer<()>,
     renditions: HashMap<String, Rendition>,
@@ -171,7 +165,6 @@ impl Driver {
         origin: moq_net::origin::Consumer,
         path: String,
         pid: LocalPid,
-        latency: Duration,
         commands: mpsc::UnboundedReceiver<Command>,
     ) -> Option<CloseReason> {
         let Some(broadcast) = origin.announced_broadcast(&path).await else {
@@ -195,7 +188,6 @@ impl Driver {
             pid,
             path,
             commands,
-            latency,
             catalog,
             renditions: HashMap::new(),
             subs: Subscriptions::new(broadcast),
@@ -240,7 +232,7 @@ impl Driver {
                         self.pid,
                         track,
                         container,
-                        resolve_subscription(params, kind, self.latency),
+                        resolve_subscription(params, kind),
                     )
                 });
 
@@ -302,20 +294,11 @@ impl Driver {
     }
 }
 
-fn resolve_subscription(
-    params: Subscription,
-    kind: Kind,
-    consumer_latency: Duration,
-) -> moq_net::track::Subscription {
+fn resolve_subscription(params: Subscription, kind: Kind) -> moq_net::track::Subscription {
     moq_net::track::Subscription::default()
         .with_priority(params.priority.unwrap_or(kind.default_priority()))
         .with_group_start(params.group_start)
-        .with_latency_max(
-            params
-                .latency_ns
-                .map(Duration::from_nanos)
-                .unwrap_or(consumer_latency),
-        )
+        .with_latency_max(Duration::from_nanos(params.latency_ns))
 }
 
 fn advertised_renditions(catalog: &moq_mux::catalog::hang::Catalog) -> HashMap<String, Rendition> {
