@@ -1,6 +1,6 @@
 use rustler::NifStruct;
 
-#[derive(NifStruct, Clone)]
+#[derive(NifStruct, Clone, Copy)]
 #[module = "ExMoQ.Subscription"]
 pub(crate) struct Subscription {
     pub priority: Option<u8>,
