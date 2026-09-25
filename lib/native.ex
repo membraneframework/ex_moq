@@ -198,10 +198,6 @@ defmodule ExMoQ.Native do
   Keep tokens unique across all broadcast consumers reporting to the same pid.
   Don't reuse tokens.
 
-  `priority` is the subscription's delivery priority:
-  under congestion, tracks with a higher value are sent first.
-  When `nil`, hang's default for the track's media kind is used.
-
   Sends to the consumer's `pid`:
     * `{:moq_frame, token(), binary(), timestamp_ns :: non_neg_integer(), keyframe? :: boolean()}`
         for every received frame
