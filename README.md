@@ -12,7 +12,7 @@ The package can be installed by adding `ex_moq` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:ex_moq, "~> 0.1.0"}
+    {:ex_moq, "~> 0.2.0"}
   ]
 end
 ```
