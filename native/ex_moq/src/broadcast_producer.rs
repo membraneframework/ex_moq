@@ -194,6 +194,6 @@ impl Producer {
 
     pub(crate) fn abort(&mut self) {
         self.tracks.clear();
-        let _ = self.broadcast.clone().abort(moq_net::Error::Cancel);
+        self.broadcast.clone().close();
     }
 }
