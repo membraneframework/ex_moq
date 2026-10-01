@@ -23,8 +23,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
-    {:ok, sub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
@@ -46,7 +46,7 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, session} = Native.create_session(relay.tcp_url, self(), false)
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(session, broadcast)
@@ -66,8 +66,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
-    {:ok, sub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
@@ -110,7 +110,7 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, session} = Native.create_session(relay.tcp_url, self(), false)
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(session, broadcast)
@@ -128,8 +128,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
-    {:ok, sub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
@@ -172,8 +172,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
-    {:ok, sub_session} = Native.create_session(relay.url, self(), relay.disable_tls_verify?)
+    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
