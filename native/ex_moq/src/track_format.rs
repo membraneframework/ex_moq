@@ -24,15 +24,6 @@ impl From<Container> for CatalogContainer {
     }
 }
 
-impl From<Container> for WireContainer {
-    fn from(container: Container) -> Self {
-        match container {
-            Container::Legacy => Self::Legacy,
-            Container::Loc => Self::Loc,
-        }
-    }
-}
-
 pub(crate) struct Description(pub(crate) Bytes);
 
 impl Encoder for Description {

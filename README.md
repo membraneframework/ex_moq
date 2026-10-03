@@ -1,3 +1,8 @@
+> [!WARNING]
+> TODO: manually test `examples/publish_and_subscribe.livemd` against the bumped moq-dev stack
+> (moq-net 0.3, relay pinned to moq-rs 0.5.0 / moq-ffi 0.4.1), and check browser playback with a
+> current `@moq/net` client (older `@moq/lite` clients may reject 62-bit origin hops). Remove this note once done.
+
 # ExMoQ
 
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_moq.svg)](https://hex.pm/packages/ex_moq)

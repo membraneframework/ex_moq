@@ -9,9 +9,9 @@ rust-version = "1.91"
 crate-type = ["cdylib"]
 
 [dependencies]
-moq-native = "0.19.15"
-hang = "0.20.9"
-moq-mux = "0.9.12"
+moq-tokio = "0.19.20"
+hang = "0.21.9"
+moq-mux = "0.10.9"
 url = "2.5.8"
 rustler = "0.38.0"
 thiserror = "2"

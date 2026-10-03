@@ -167,7 +167,7 @@ impl Driver {
         pid: LocalPid,
         commands: mpsc::UnboundedReceiver<Command>,
     ) -> Option<CloseReason> {
-        let Some(broadcast) = origin.announced_broadcast(&path).await else {
+        let Ok(broadcast) = origin.routed_broadcast(&path).await else {
             return Some(CloseReason::NotAnnounced);
         };
 
@@ -286,9 +286,12 @@ impl Driver {
             .get(track)
             .ok_or(TrackError::NotAdvertised)?;
 
-        let container = (&rendition.container)
-            .try_into()
-            .map_err(TrackError::Container)?;
+        let kind = match rendition.kind {
+            Kind::Video => moq_mux::container::Kind::Video,
+            Kind::Audio => moq_mux::container::Kind::Audio,
+        };
+        let container =
+            WireContainer::new(&rendition.container, kind).map_err(TrackError::Container)?;
 
         Ok((rendition.kind, container))
     }
@@ -297,8 +300,8 @@ impl Driver {
 fn resolve_subscription(params: Subscription, kind: Kind) -> moq_net::track::Subscription {
     moq_net::track::Subscription::default()
         .with_priority(params.priority.unwrap_or(kind.default_priority()))
-        .with_group_start(params.group_start)
-        .with_latency_max(Duration::from_nanos(params.latency_ns))
+        .with_start(params.group_start.map(moq_net::track::Position::group))
+        .with_max_age(Duration::from_nanos(params.latency_ns))
 }
 
 fn advertised_renditions(catalog: &moq_mux::catalog::hang::Catalog) -> HashMap<String, Rendition> {

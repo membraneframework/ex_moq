@@ -91,10 +91,8 @@ async fn run_subscription(
     container: WireContainer,
     subscription: moq_net::track::Subscription,
 ) -> Result<(), TrackError> {
-    let latency = subscription.latency_max;
     let subscriber = consumer.subscribe(subscription).await?;
-
-    let mut consumer = WireConsumer::new(subscriber, container).with_latency(latency);
+    let mut consumer = WireConsumer::new(subscriber, container);
 
     let mut env = OwnedEnv::new();
 
