@@ -187,7 +187,7 @@ pub(crate) enum TrackFormat {
 }
 
 impl TrackFormat {
-    pub fn kind(self: &Self) -> moq_mux::container::Kind {
+    pub fn kind(&self) -> moq_mux::container::Kind {
         match self {
             TrackFormat::Video(_) => moq_mux::container::Kind::Video,
             TrackFormat::Audio(_) => moq_mux::container::Kind::Audio,
