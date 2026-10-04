@@ -20,5 +20,5 @@ defmodule ExMoQ.Subscription do
           group_start: non_neg_integer() | nil,
           latency_ns: non_neg_integer()
         }
-  defstruct [priority: nil, group_start: nil, latency_ns: 0]
+  defstruct priority: nil, group_start: nil, latency_ns: 0
 end
