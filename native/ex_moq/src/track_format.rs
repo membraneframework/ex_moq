@@ -187,10 +187,18 @@ pub(crate) enum TrackFormat {
 }
 
 impl TrackFormat {
-    pub(crate) fn default_priority(&self) -> u8 {
+    pub fn kind(self: &Self) -> moq_mux::container::Kind {
         match self {
-            Self::Video(_) => hang::catalog::PRIORITY.video,
-            Self::Audio(_) => hang::catalog::PRIORITY.audio,
+            TrackFormat::Video(_) => moq_mux::container::Kind::Video,
+            TrackFormat::Audio(_) => moq_mux::container::Kind::Audio,
         }
+    }
+}
+
+pub(crate) fn default_priority(kind: moq_mux::container::Kind) -> u8 {
+    match kind {
+        moq_mux::container::Kind::Audio => hang::catalog::PRIORITY.audio,
+        moq_mux::container::Kind::Video => hang::catalog::PRIORITY.video,
+        moq_mux::container::Kind::Data => 0,
     }
 }

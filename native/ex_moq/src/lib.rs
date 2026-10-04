@@ -18,7 +18,7 @@ mod web_codecs;
 
 use broadcast_producer::{AddTrackError, UpdateTrackError, WriteFrameError};
 use messages::Token;
-use track_format::{Container, TrackFormat};
+use track_format::{Container, TrackFormat, default_priority};
 
 macro_rules! nif_error {
     ($fmt:literal $($arg:tt)*) => {
@@ -139,7 +139,7 @@ fn add_track(
     latency_ns: u64,
 ) -> NifResult<Atom> {
     let latency = Duration::from_nanos(latency_ns);
-    let priority = priority.unwrap_or_else(|| format.default_priority());
+    let priority = priority.unwrap_or_else(|| default_priority(format.kind()));
 
     lock_producer(&producer)?
         .add_track(track, format, container, priority, latency)

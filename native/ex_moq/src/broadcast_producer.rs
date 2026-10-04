@@ -96,8 +96,9 @@ impl Producer {
             .publish(&path, moq_net::origin::Route::default())
             .map_err(|source| CreateError::Broadcast { path, source })?;
 
-        let catalog = moq_mux::catalog::Producer::new(&mut broadcast, Default::default())
-            .map_err(CreateError::Catalog)?;
+        let catalog =
+            moq_mux::catalog::Producer::new(&mut broadcast, moq_mux::catalog::Config::default())
+                .map_err(CreateError::Catalog)?;
 
         Ok(Self {
             broadcast,
