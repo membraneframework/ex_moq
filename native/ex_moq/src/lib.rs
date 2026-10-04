@@ -120,10 +120,10 @@ fn close_broadcast_producer(producer: ResourceArc<BroadcastProducerResource>) ->
     match producer.0.lock() {
         Ok(mut producer) => {
             producer.finish();
-            producer.abort();
+            producer.close();
         }
         Err(poisoned) => {
-            poisoned.into_inner().abort();
+            poisoned.into_inner().close();
         }
     }
     ok()

@@ -193,7 +193,7 @@ impl Producer {
         let _ = self.catalog.finish();
     }
 
-    pub(crate) fn abort(&mut self) {
+    pub(crate) fn close(&mut self) {
         self.tracks.clear();
         self.broadcast.clone().close();
     }
