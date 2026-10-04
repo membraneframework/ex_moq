@@ -15,7 +15,7 @@ use tokio::task::AbortHandle;
 use crate::messages::{self, Token};
 use crate::runtime;
 use crate::subscription::Subscription;
-use crate::track_format::{CatalogContainer, WireContainer};
+use crate::track_format::{CatalogContainer, WireContainer, default_priority};
 
 use subscriptions::Subscriptions;
 
@@ -58,23 +58,8 @@ impl Drop for CloseGuard {
 
 pub(crate) struct Closed;
 
-#[derive(Clone, Copy)]
-enum Kind {
-    Video,
-    Audio,
-}
-
-impl Kind {
-    fn default_priority(self) -> u8 {
-        match self {
-            Self::Video => hang::catalog::PRIORITY.video,
-            Self::Audio => hang::catalog::PRIORITY.audio,
-        }
-    }
-}
-
 struct Rendition {
-    kind: Kind,
+    kind: moq_mux::container::Kind,
     container: CatalogContainer,
 }
 
@@ -167,7 +152,7 @@ impl Driver {
         pid: LocalPid,
         commands: mpsc::UnboundedReceiver<Command>,
     ) -> Option<CloseReason> {
-        let Some(broadcast) = origin.announced_broadcast(&path).await else {
+        let Ok(broadcast) = origin.routed_broadcast(&path).await else {
             return Some(CloseReason::NotAnnounced);
         };
 
@@ -280,31 +265,36 @@ impl Driver {
         }
     }
 
-    fn get_rendition(&self, track: &str) -> Result<(Kind, WireContainer), TrackError> {
+    fn get_rendition(
+        &self,
+        track: &str,
+    ) -> Result<(moq_mux::container::Kind, WireContainer), TrackError> {
         let rendition = self
             .renditions
             .get(track)
             .ok_or(TrackError::NotAdvertised)?;
 
-        let container = (&rendition.container)
-            .try_into()
+        let container = WireContainer::new(&rendition.container, rendition.kind)
             .map_err(TrackError::Container)?;
 
         Ok((rendition.kind, container))
     }
 }
 
-fn resolve_subscription(params: Subscription, kind: Kind) -> moq_net::track::Subscription {
+fn resolve_subscription(
+    params: Subscription,
+    kind: moq_mux::container::Kind,
+) -> moq_net::track::Subscription {
     moq_net::track::Subscription::default()
-        .with_priority(params.priority.unwrap_or(kind.default_priority()))
-        .with_group_start(params.group_start)
-        .with_latency_max(Duration::from_nanos(params.latency_ns))
+        .with_priority(params.priority.unwrap_or(default_priority(kind)))
+        .with_start(params.group_start.map(moq_net::track::Position::group))
+        .with_max_age(Duration::from_nanos(params.latency_ns))
 }
 
 fn advertised_renditions(catalog: &moq_mux::catalog::hang::Catalog) -> HashMap<String, Rendition> {
     let videos = catalog.video.renditions.iter().map(|(name, config)| {
         let rendition = Rendition {
-            kind: Kind::Video,
+            kind: moq_mux::container::Kind::Video,
             container: config.container.clone(),
         };
         (name.clone(), rendition)
@@ -312,7 +302,7 @@ fn advertised_renditions(catalog: &moq_mux::catalog::hang::Catalog) -> HashMap<S
 
     let audios = catalog.audio.renditions.iter().map(|(name, config)| {
         let rendition = Rendition {
-            kind: Kind::Audio,
+            kind: moq_mux::container::Kind::Audio,
             container: config.container.clone(),
         };
         (name.clone(), rendition)
