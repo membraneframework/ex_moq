@@ -4,7 +4,7 @@ defmodule ExMoQ.NativeTest do
   use ExUnit.Case, async: true
 
   alias ExMoQ.Native
-  alias ExMoQ.Test.Relay
+  alias ExMoQ.Testing.Relay
   alias ExMoQ.WebCodecs
 
   @moduletag :integration
@@ -23,8 +23,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
-    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, pub_session} = Native.create_session(relay.tcp, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
@@ -46,7 +46,7 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, session} = Native.create_session(relay.tcp, self(), false)
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(session, broadcast)
@@ -66,8 +66,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
-    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, pub_session} = Native.create_session(relay.tcp, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
@@ -110,7 +110,7 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, session} = Native.create_session(relay.tcp, self(), false)
     assert_receive :moq_connected, 10_000
 
     {:ok, producer} = Native.create_broadcast_producer(session, broadcast)
@@ -128,8 +128,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
-    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, pub_session} = Native.create_session(relay.tcp, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 
@@ -172,8 +172,8 @@ defmodule ExMoQ.NativeTest do
     broadcast: broadcast,
     relay: relay
   } do
-    {:ok, pub_session} = Native.create_session(relay.tcp_url, self(), false)
-    {:ok, sub_session} = Native.create_session(relay.tcp_url, self(), false)
+    {:ok, pub_session} = Native.create_session(relay.tcp, self(), false)
+    {:ok, sub_session} = Native.create_session(relay.tcp, self(), false)
     assert_receive :moq_connected, 10_000
     assert_receive :moq_connected, 10_000
 

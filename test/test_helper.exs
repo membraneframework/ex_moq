@@ -1,7 +1,7 @@
 ExUnit.start(capture_log: true)
 
 cond do
-  ExMoQ.Test.Relay.find_binary() ->
+  ExMoQ.Relay.find_binary() ->
     :ok
 
   System.get_env("CI") == "true" ->
