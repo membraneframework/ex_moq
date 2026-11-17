@@ -38,9 +38,7 @@ defmodule ExMoQ.MixProject do
   defp deps do
     [
       {:rustler, "~> 0.38.0"},
-      # TODO: switch to hex once released
-      {:ex_moq_relay,
-       github: "membraneframework/ex_moq_relay", branch: "kidq330/initial", only: :test},
+      {:ex_moq_relay, "~> 0.1.0", only: :test},
       {:ex_doc, ">= 0.40.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
