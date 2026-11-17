@@ -122,10 +122,7 @@ impl Producer {
 
         let track = self
             .broadcast
-            .create_track(
-                entry.key().as_str(),
-                moq_net::track::Info::default().with_priority(priority),
-            )
+            .create_track(entry.key().as_str(), self.catalog.track_info(priority))
             .map_err(AddTrackError::CreateTrack)?;
 
         let media = match format {

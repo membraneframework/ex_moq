@@ -156,8 +156,7 @@ impl Driver {
             return Some(CloseReason::NotAnnounced);
         };
 
-        let format = moq_mux::catalog::CatalogFormat::detect(&path)
-            .unwrap_or(moq_mux::catalog::CatalogFormat::DEFAULT);
+        let format = moq_mux::catalog::CatalogFormat::detect(&path).unwrap_or_default();
         let catalog = match moq_mux::catalog::Consumer::new(&broadcast, format).await {
             Ok(catalog) => catalog,
             Err(e) => return Some(CloseReason::CatalogError(e.to_string())),
