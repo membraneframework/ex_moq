@@ -2,15 +2,15 @@ defmodule ExMoQ.Subscription do
   @moduledoc """
   Parameters of a track subscription.
 
-  Fields map onto [`moq_net::track::Subscription`](https://docs.rs/moq-net/0.2.17/moq_net/track/struct.Subscription.html).
+  Fields map onto [`moq_net::track::Subscription`](https://docs.rs/moq-net/0.3/moq_net/track/struct.Subscription.html).
 
     * `priority` - delivery priority, higher is sent first.
-      `nil` uses the [hang default](https://docs.rs/hang/0.20.9/hang/catalog/constant.PRIORITY.html)
+      `nil` uses the [hang default](https://docs.rs/hang/0.21/hang/catalog/constant.PRIORITY.html)
       for the track's media kind.
     * `group_start` - first group to deliver. `nil` starts at the first group the
       publisher serves: the latest one, or an older one if another subscription
       to the same track in this session requested an earlier `group_start`.
-    * `latency_ns` - maps to `latency_max`: how old a non-latest group may get
+    * `latency_ns` - maps to `max_age`: how old a non-latest group may get
       before it is skipped. `0` skips immediately, so a catch-up join needs a
       budget covering the backlog. Defaults to `0`.
   """
