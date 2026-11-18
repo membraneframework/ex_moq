@@ -1,6 +1,5 @@
-use hang::moq_net::{self, origin};
+use hang::moq_net::origin;
 
-use moq_native::ClientConfig;
 use rustler::{LocalPid, OwnedEnv};
 use tokio::task::AbortHandle;
 use url::Url;
@@ -26,8 +25,9 @@ impl Drop for Handle {
 }
 
 pub(crate) fn create(url: Url, pid: LocalPid, disable_tls_verify: bool) -> Handle {
-    let publish = moq_net::Origin::random().produce();
-    let subscribe = moq_net::Origin::random().produce();
+    let _guard = runtime().handle().enter();
+    let publish = moq_tokio::origin::spawn();
+    let subscribe = moq_tokio::origin::spawn();
 
     let publish_consumer = publish.consume();
     let subscribe_consumer = subscribe.consume();
@@ -56,11 +56,14 @@ async fn run_session(
 ) -> Result<(), messages::PidDead> {
     let mut env = OwnedEnv::new();
     match connect(url, publish, subscribe, disable_tls_verify).await {
-        Ok(session) => {
+        Ok(connection) => {
             messages::send_connected(&mut env, pid)?;
 
-            let reason = session.closed().await;
-            messages::send_disconnected(&mut env, pid, reason.to_string())
+            let reason = match connection.closed().await {
+                Ok(()) => "closed".to_owned(),
+                Err(e) => e.to_string(),
+            };
+            messages::send_disconnected(&mut env, pid, reason)
         }
         Err(e) => messages::send_setup_failed(&mut env, pid, e.to_string()),
     }
@@ -71,14 +74,16 @@ async fn connect(
     publish: origin::Consumer,
     subscribe: origin::Producer,
     disable_tls_verify: bool,
-) -> Result<moq_net::Session, moq_native::Error> {
-    let mut config = ClientConfig::default();
-    config.tls.disable_verify = Some(disable_tls_verify);
+) -> moq_tokio::Result<moq_tokio::Connection> {
+    let mut config = moq_tokio::connect::Config::default();
+    config.tls.insecure = Some(disable_tls_verify);
 
     config
-        .init()?
+        .init(moq_tokio::quic::Config::default())?
         .with_publisher(publish)
         .with_subscriber(subscribe)
+        .with_reconnect(false)
         .connect(url)
+        .established()
         .await
 }

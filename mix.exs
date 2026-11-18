@@ -38,7 +38,7 @@ defmodule ExMoQ.MixProject do
   defp deps do
     [
       {:rustler, "~> 0.38.0"},
-      {:muontrap, "~> 1.8", optional: true},
+      {:ex_moq_relay, "~> 0.1.0", only: :test},
       {:ex_doc, ">= 0.40.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
@@ -47,8 +47,7 @@ defmodule ExMoQ.MixProject do
 
   defp dialyzer() do
     opts = [
-      flags: [:error_handling],
-      plt_add_apps: [:ex_unit]
+      flags: [:error_handling]
     ]
 
     if System.get_env("CI") == "true" do
